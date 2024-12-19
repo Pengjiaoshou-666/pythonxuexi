@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Python趣味学习</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="lesson-panel">
+            <h1>Python基础教学</h1>
+            <div class="lesson-content" id="lesson-content">
+                <!-- 教学内容会在这里显示 -->
+            </div>
+            <div class="lesson-navigation">
+                <button onclick="prevStep()" id="prev-btn">上一步</button>
+                <button onclick="nextStep()" id="next-btn">下一步</button>
+            </div>
+        </div>
+        
+        <div class="practice-panel">
+            <h2>练习区</h2>
+            <div class="challenge-text" id="challenge-text"></div>
+            <div class="code-area">
+                <div class="editor-header">
+                    <span>Python 编辑器</span>
+                    <button class="clear-btn" onclick="clearCode()">清空</button>
+                </div>
+                <div id="code-editor"></div>
+                <button onclick="runCode()" class="run-btn">运行代码</button>
+            </div>
+            <div id="result" class="result-area"></div>
+            <div class="chat-container">
+                <h3>Python助手</h3>
+                <div class="chat-info">
+                    <span>剩余对话次数：<span id="remaining-count">0</span></span>
+                    <button onclick="showRechargeModal()" class="recharge-btn">充值</button>
+                </div>
+                <div class="chat-messages" id="chat-messages"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="输入你的问题...">
+                    <button onclick="sendMessage()" class="chat-send-btn">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+    <!-- 充值模态框 -->
+    <div id="recharge-modal" class="modal">
+        <div class="modal-content">
+            <h3>购买对话次数</h3>
+            <div class="recharge-options">
+                <div class="recharge-package">
+                    <div class="package-info">
+                        <h4>标准套餐</h4>
+                        <p class="price">￥9.9</p>
+                        <p class="count">20次对话</p>
+                    </div>
+                    <div class="payment-info">
+                        <p>请通过以下方式支付：</p>
+                        <img src="path/to/your/qr-code.jpg" alt="支付宝收款码">
+                        <p>支付完成后，请联系客服获取充值码</p>
+                        <button onclick="redeemCode()" class="redeem-btn">
+                            输入充值码
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="closeRechargeModal()" class="close-btn">关闭</button>
+        </div>
+    </div>
+</body>
+</html> 

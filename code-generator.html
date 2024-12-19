@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>充值码生成器</title>
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.15.0/dist/av-min.js"></script>
+    <script>
+        // 初始化 LeanCloud
+        AV.init({
+            appId: "ExQzKb6BwcDY7hoogtflusJQ-gzGzoHsz",
+            appKey: "NzmUTgZOtJ8R9S84mOzCwyND",
+            serverURL: "https://exqzkb6b.lc-cn-n1-shared.com"
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .codes {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .code-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .copy-btn {
+            background: #007bff;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .used {
+            background: #e9ecef;
+            color: #666;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .generate-btn {
+            background: #28a745;
+        }
+        
+        .copy-all-btn {
+            background: #007bff;
+        }
+        
+        .export-btn {
+            background: #6c757d;
+        }
+        
+        .selected {
+            background: #e3f2fd;
+            border: 2px solid #007bff;
+        }
+        
+        .code-item {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>充值码生成器</h1>
+        <div class="actions">
+            <button onclick="generateCodes()" class="generate-btn">生成充值码</button>
+            <button onclick="copyAllCodes()" class="copy-all-btn">复制所有代码</button>
+            <button onclick="exportToExcel()" class="export-btn">导出到Excel</button>
+        </div>
+        <div class="form-group">
+            <label>次数</label>
+            <select id="count">
+                <option value="5">5次</option>
+                <option value="10">10次</option>
+                <option value="20" selected>20次</option>
+                <option value="50">50次</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>生成数量</label>
+            <input type="number" id="quantity" value="1" min="1" max="100">
+        </div>
+        
+        <div class="codes" id="codeList">
+            <!-- 生成的代码会显示在这里 -->
+        </div>
+        <textarea id="copyArea" style="position: absolute; left: -9999px;"></textarea>
+    </div>
+
+    <script>
+        // 用于存储已生成的代码
+        let generatedCodes = JSON.parse(localStorage.getItem('generatedCodes')) || {};
+
+        function generateCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function generateCodes() {
+            const count = document.getElementById('count').value;
+            const quantity = document.getElementById('quantity').value;
+            const codeList = document.getElementById('codeList');
+            const newCodes = [];
+            
+            // 创建 RedeemCode 类
+            const RedeemCode = AV.Object.extend('RedeemCode');
+            
+            for (let i = 0; i < quantity; i++) {
+                let code;
+                do {
+                    code = generateCode();
+                } while (generatedCodes[code]);
+
+                const redeemCode = new RedeemCode();
+                redeemCode.set({
+                    code: code,
+                    count: parseInt(count),
+                    used: false,
+                    generatedAt: new Date()
+                });
+                
+                // 保存到 LeanCloud
+                redeemCode.save().then(() => {
+                    console.log('充值码保存成功：', code);
+                }).catch(error => {
+                    console.error('保存失败：', error);
+                });
+                
+                newCodes.push(code);
+            }
+
+            // 显示新生成的代码
+            const html = newCodes.map(code => `
+                <div class="code-item" onclick="toggleCodeSelection(this, '${code}')">
+                    <span>${code} (${count}次)</span>
+                    <button class="copy-btn" onclick="event.stopPropagation(); copyCode('${code}')">复制</button>
+                </div>
+            `).join('');
+
+            codeList.innerHTML = html;
+        }
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                alert('代码已复制到剪贴板！');
+            });
+        }
+
+        let selectedCodes = new Set();
+
+        function toggleCodeSelection(codeElement, code) {
+            if (codeElement.classList.toggle('selected')) {
+                selectedCodes.add(code);
+            } else {
+                selectedCodes.delete(code);
+            }
+        }
+
+        function copyAllCodes() {
+            const codes = selectedCodes.size > 0 
+                ? Array.from(selectedCodes)
+                : Object.entries(generatedCodes)
+                    .filter(([_, info]) => !info.used)
+                    .map(([code]) => code);
+
+            if (codes.length === 0) {
+                alert('没有可复制的代码！');
+                return;
+            }
+
+            const formattedCodes = codes.map(code => {
+                const info = generatedCodes[code];
+                return `${code} (${info.count}次)`;
+            }).join('\n');
+
+            const copyArea = document.getElementById('copyArea');
+            copyArea.value = formattedCodes;
+            copyArea.select();
+            document.execCommand('copy');
+
+            alert(`已复制 ${codes.length} 个充值码到剪贴板！`);
+            selectedCodes.clear();
+            updateCodeList();
+        }
+
+        function exportToExcel() {
+            const codes = selectedCodes.size > 0 
+                ? Array.from(selectedCodes)
+                : Object.keys(generatedCodes);
+
+            const csv = [
+                ['充值码', '次数', '状态', '生成时间'].join(','),
+                ...codes.map(code => {
+                    const info = generatedCodes[code];
+                    return [
+                        code,
+                        info.count,
+                        info.used ? '已使用' : '未使用',
+                        new Date(info.generatedAt).toLocaleString()
+                    ].join(',');
+                })
+            ].join('\n');
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '充值码列表.csv';
+            link.click();
+        }
+
+        function updateCodeList() {
+            const codeList = document.getElementById('codeList');
+            const html = Object.entries(generatedCodes)
+                .map(([code, info]) => `
+                    <div class="code-item ${info.used ? 'used' : ''} ${selectedCodes.has(code) ? 'selected' : ''}"
+                         onclick="toggleCodeSelection(this, '${code}')">
+                        <span>${code} (${info.count}次)${info.used ? ' - 已使用' : ''}</span>
+                        <button class="copy-btn" onclick="event.stopPropagation(); copyCode('${code}')" 
+                                ${info.used ? 'disabled' : ''}>
+                            复制
+                        </button>
+                    </div>
+                `)
+                .join('');
+            codeList.innerHTML = html;
+        }
+
+        // 修改初始化函数
+        window.onload = () => {
+            // 清空显示区域
+            document.getElementById('codeList').innerHTML = '';
+            // 清空 localStorage 中的代码
+            localStorage.removeItem('generatedCodes');
+        };
+    </script>
+</body>
+</html> 
